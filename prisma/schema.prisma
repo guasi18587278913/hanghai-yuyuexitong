@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  nickname      String?   @unique
+  planetId      String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("STUDENT") // SQLite doesn't support enums, using String instead
+  accounts      Account[]
+  sessions      Session[]
+
+  // Relations
+  coachAvailabilities Availability[] @relation("CoachAvailabilities")
+  studentBookings     Booking[]      @relation("StudentBookings")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Coach's availability slot
+model Availability {
+  id        String   @id @default(cuid())
+  startTime DateTime
+  endTime   DateTime
+  isBooked  Boolean  @default(false)
+
+  // Relations
+  coachId String
+  coach   User   @relation("CoachAvailabilities", fields: [coachId], references: [id])
+
+  booking Booking? // An availability slot can have one booking
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("availabilities")
+}
+
+// Booking model
+model Booking {
+  id String @id @default(cuid())
+
+  // Relations
+  studentId String
+  student   User   @relation("StudentBookings", fields: [studentId], references: [id])
+
+  availabilityId String       @unique // each booking is for one unique availability slot
+  availability   Availability @relation(fields: [availabilityId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("bookings")
+} 
