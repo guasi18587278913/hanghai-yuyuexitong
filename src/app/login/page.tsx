@@ -1,74 +1,73 @@
- 'use client'
+'use client'
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client'
+import { Auth } from '@supabase/auth-ui-react'
+import { ThemeSupa } from '@supabase/auth-ui-shared'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function LoginPage() {
-  const [nickname, setNickname] = useState('');
-  const [planetId, setPlanetId] = useState('');
-  const [error, setError] = useState('');
-  const router = useRouter();
+  const supabase = createClient()
+  const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        // Redirect to home page if user is already logged in
+        router.push('/')
+      }
+    })
 
-    const result = await signIn('credentials', {
-      redirect: false,
-      nickname,
-      planetId,
-    });
-
-    if (result?.error) {
-      setError('无效的昵称或星球编号');
-    } else {
-      router.push('/coach/availability');
+    return () => {
+      subscription.unsubscribe()
     }
-  };
+  }, [supabase, router])
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <form onSubmit={handleSubmit} className="p-8 bg-white rounded-lg shadow-md w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-6 text-center">教练登录</h1>
-        {error && <p className="mb-4 text-center text-red-500">{error}</p>}
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="nickname">
-            昵称
-          </label>
-          <input
-            id="nickname"
-            type="text"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="sailing_master"
-          />
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900">
+            欢迎来到
+          </h1>
+          <h2 className="text-3xl font-extrabold text-emerald-500 mt-1">
+            {process.env.NEXT_PUBLIC_APP_NAME}
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            请登录以继续
+          </p>
         </div>
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="planetId">
-            星球编号
-          </label>
-          <input
-            id="planetId"
-            type="password"
-            value={planetId}
-            onChange={(e) => setPlanetId(e.target.value)}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="••••••••"
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <button
-            type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
-          >
-            登录
-          </button>
-        </div>
-      </form>
+        <Auth
+          supabaseClient={supabase}
+          appearance={{ theme: ThemeSupa }}
+          theme="light"
+          providers={['google', 'github']}
+          redirectTo={`${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`}
+          localization={{
+            variables: {
+              sign_in: {
+                email_label: '邮箱地址',
+                password_label: '密码',
+                button_label: '登录',
+                social_provider_text: '通过 {{provider}} 登录',
+                link_text: '已有账户？登录',
+              },
+              sign_up: {
+                email_label: '邮箱地址',
+                password_label: '创建密码',
+                button_label: '注册',
+                social_provider_text: '通过 {{provider}} 注册',
+                link_text: '没有账户？注册',
+              },
+              forgotten_password: {
+                email_label: '邮箱地址',
+                button_label: '发送重置邮件',
+                link_text: '忘记密码？',
+              },
+            },
+          }}
+        />
+      </div>
     </div>
-  );
+  )
 }
