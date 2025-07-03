@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   format,
   addMonths,
@@ -14,54 +14,69 @@ import { getMonthMatrix } from '@/lib/calendar-utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from '@/components/ui/button'
-import { useBookingStore } from '@/lib/store/booking-store'
 
 interface BookingCalendarProps {
-  // An array of dates that are available for booking
-  availableDates?: Date[];
-  // Optional: The earliest date that can be selected
-  minDate?: Date;
-  // Optional: The latest date that can be selected
-  maxDate?: Date;
+  availableDates?: Date[]
+  minDate?: Date
+  maxDate?: Date
+  selectedDate?: Date | null
+  onDateSelect?: (date: Date) => void
+  // Making month navigation controllable from outside
+  currentMonth?: Date
+  onMonthChange?: (month: Date) => void
 }
 
-export function BookingCalendar({ 
+export function BookingCalendar({
   availableDates = [],
   minDate,
-  maxDate
+  maxDate,
+  selectedDate: controlledSelectedDate,
+  onDateSelect: controlledOnDateSelect,
+  currentMonth: controlledCurrentMonth,
+  onMonthChange: controlledOnMonthChange,
 }: BookingCalendarProps) {
-  const { 
-    currentMonth, 
-    setCurrentMonth, 
-    date: selectedDate, 
-    setDate: onDateSelect 
-  } = useBookingStore();
+  // Internal state for when the component is not controlled from the outside.
+  const [internalCurrentMonth, setInternalCurrentMonth] = useState(startOfToday())
+  
+  const currentMonth = controlledCurrentMonth || internalCurrentMonth
+  const setCurrentMonth = controlledOnMonthChange || setInternalCurrentMonth
+  
+  // The selected date is now primarily controlled by props.
+  const selectedDate = controlledSelectedDate
 
-  const monthMatrix = useMemo(() => getMonthMatrix(currentMonth), [currentMonth]);
-  const today = startOfToday();
+  const monthMatrix = useMemo(() => getMonthMatrix(currentMonth), [currentMonth])
+  const today = startOfToday()
 
-  // For performance, convert the array of available dates to a Set of date strings.
-  const availableDatesSet = useMemo(() => 
-    new Set(availableDates.map(d => format(d, 'yyyy-MM-dd'))), 
+  const availableDatesSet = useMemo(
+    () => new Set(availableDates.map((d) => format(d, 'yyyy-MM-dd'))),
     [availableDates]
-  );
+  )
+  
+  const onDateSelect = controlledOnDateSelect || (() => {});
 
-  const effectiveMinDate = minDate || today;
-  const effectiveMaxDate = maxDate || addMonths(today, 3);
+  const effectiveMinDate = minDate || today
+  const effectiveMaxDate = maxDate || addMonths(today, 3)
 
-  const weekDays = ['一', '二', '三', '四', '五', '六', '日'];
+  const weekDays = ['一', '二', '三', '四', '五', '六', '日']
 
   return (
-    <div className="p-4 md:p-6 border rounded-lg shadow-sm">
-      <CalendarHeader 
+    <div className="rounded-lg border bg-white p-4 shadow-sm dark:bg-zinc-800 md:p-6">
+      <CalendarHeader
         currentMonth={currentMonth}
         onNextMonth={() => setCurrentMonth(addMonths(currentMonth, 1))}
         onPrevMonth={() => setCurrentMonth(subMonths(currentMonth, 1))}
       />
-      <div className="grid grid-cols-7 gap-2 mt-4">
-        {weekDays.map(day => <div key={day} className="text-center text-sm font-medium text-neutral-400">{day}</div>)}
+      <div className="mt-4 grid grid-cols-7 gap-2">
+        {weekDays.map((day) => (
+          <div
+            key={day}
+            className="text-center text-sm font-medium text-neutral-400"
+          >
+            {day}
+          </div>
+        ))}
         {monthMatrix.map((day, index) => (
-          <DayCell 
+          <DayCell
             key={index}
             day={day}
             today={today}
@@ -69,12 +84,14 @@ export function BookingCalendar({
             maxDate={effectiveMaxDate}
             selectedDate={selectedDate}
             onDateSelect={onDateSelect}
-            isAvailable={day ? availableDatesSet.has(format(day, 'yyyy-MM-dd')) : false}
+            isAvailable={
+              day ? availableDatesSet.has(format(day, 'yyyy-MM-dd')) : false
+            }
           />
         ))}
       </div>
     </div>
-  );
+  )
 }
 
 // --- Calendar Sub-components ---
@@ -97,7 +114,7 @@ interface DayCellProps {
   today: Date;
   minDate: Date;
   maxDate: Date;
-  selectedDate: Date | null;
+  selectedDate: Date | null | undefined;
   isAvailable: boolean;
   onDateSelect: (date: Date) => void;
 }
@@ -110,15 +127,14 @@ function DayCell({ day, today, minDate, maxDate, selectedDate, onDateSelect, isA
   const isDateBeforeMin = isBefore(day, minDate);
   const isDateAfterMax = maxDate ? isBefore(maxDate, day) : false;
   
-  // A day is selectable if it's available AND within the min/max date range.
   const isSelectable = isAvailable && !isDateBeforeMin && !isDateAfterMax;
 
   return (
     <div
       className={clsx(
-        'relative flex items-center justify-center h-10 w-10 rounded-full transition-colors duration-200',
-        isSelectable ? 'cursor-pointer' : 'text-neutral-400 cursor-not-allowed',
-        !isSelectable && isToday(day) && 'text-neutral-500 font-semibold',
+        'relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-200',
+        isSelectable ? 'cursor-pointer' : 'cursor-not-allowed text-neutral-400',
+        !isSelectable && isToday(day) && 'font-semibold text-neutral-500',
         !isSelectable && !isAvailable && 'text-neutral-300', // Dim unavailable dates
         isSelectable && isToday(day) && 'bg-neutral-100',
         isSelectable && !isToday(day) && 'hover:bg-neutral-100',

@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter as FontSans } from 'next/font/google'
 import "./globals.css";
-import AuthProvider from "./auth-provider";
+import { cn } from "@/lib/utils";
+import AuthProvider from './auth-provider'
+import { Toaster } from '@/components/ui/sonner'
 
-const inter = Inter({ subsets: ["latin"] });
+const fontSans = FontSans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+})
 
 export const metadata: Metadata = {
   title: "Sailing Coach Booking",
@@ -16,10 +21,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={cn(
+          'min-h-screen bg-background font-sans antialiased',
+          fontSans.variable
+        )}
+      >
         <AuthProvider>
           {children}
+          <Toaster richColors />
         </AuthProvider>
       </body>
     </html>

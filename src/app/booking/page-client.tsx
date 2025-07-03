@@ -9,59 +9,62 @@ import { format } from "date-fns";
 
 interface BookingClientProps {
   availableDates: Date[];
+  coachId: string;
 }
 
-// Mock function to simulate fetching slots from an API
-async function getSlotsForDate(date: Date): Promise<Slot[]> {
-  console.log(`Fetching slots for ${format(date, 'yyyy-MM-dd')}...`);
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500)); 
+async function getSlotsForDate(
+  date: Date,
+  coachId: string
+): Promise<Slot[]> {
+  const dateString = format(date, 'yyyy-MM-dd');
+  const response = await fetch(
+    `/api/availabilities?coachId=${coachId}&date=${dateString}`
+  );
 
-  // In a real app, you'd fetch this from your database based on the selected date.
-  // For this demo, we'll return some mock slots.
-  const hour = date.getDate() % 5; // Just to make different dates have different slots
-  return [
-    { time: '09:00', available: hour !== 1 },
-    { time: '10:00', available: true },
-    { time: '11:00', available: hour !== 2 },
-    { time: '12:00', available: false },
-    { time: '13:00', available: true },
-    { time: '14:00', available: hour !== 3 },
-    { time: '15:00', available: true },
-    { time: '16:00', available: hour !== 4 },
-    { time: '17:00', available: true },
-  ];
+  if (!response.ok) {
+    throw new Error('Failed to fetch slots');
+  }
+
+  const slots = await response.json();
+  return slots;
 }
 
-
-export default function BookingClient({ availableDates }: BookingClientProps) {
-  const { date, setStatus, setSlots } = useBookingStore();
+export default function BookingClient({
+  availableDates,
+  coachId,
+}: BookingClientProps) {
+  const { date, setDate, currentMonth, setCurrentMonth, setStatus, setSlots } =
+    useBookingStore()
 
   useEffect(() => {
-    // This effect runs whenever the selected date changes.
     if (!date) return;
 
     const fetchSlots = async () => {
       try {
         setStatus('loading');
-        const fetchedSlots = await getSlotsForDate(date);
+        const fetchedSlots = await getSlotsForDate(date, coachId);
         setSlots(fetchedSlots);
         setStatus('success');
       } catch (error) {
-        console.error("Failed to fetch slots:", error);
+        console.error('Failed to fetch slots:', error);
         setStatus('error');
       }
     };
 
     fetchSlots();
-  }, [date, setStatus, setSlots]);
-
+  }, [date, coachId, setStatus, setSlots]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4 sm:p-6 md:p-8">
-      <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 bg-white rounded-xl shadow-2xl overflow-hidden">
+      <div className="mx-auto grid w-full max-w-4xl grid-cols-1 overflow-hidden rounded-xl bg-white shadow-2xl md:grid-cols-3">
         <div className="md:col-span-2">
-          <BookingCalendar availableDates={availableDates} />
+          <BookingCalendar
+            availableDates={availableDates}
+            selectedDate={date}
+            onDateSelect={setDate}
+            currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
+          />
         </div>
         <div className="md:col-span-1">
           <TimeSlotPanel />

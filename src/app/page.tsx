@@ -1,51 +1,84 @@
-import Link from 'next/link';
+'use client'
 
-export default function LandingPage() {
+import { useState } from 'react'
+import Link from 'next/link'
+import { LoginModal } from '@/components/login-modal'
+
+type Role = 'student' | 'coach' | 'admin'
+
+export default function HomePage() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null)
+
+  const handleRoleSelect = (role: Role) => {
+    setSelectedRole(role)
+    setIsModalOpen(true)
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#F0FCF9] text-[#004D40]">
-      <header className="absolute top-8 left-8">
-        <h1 className="text-xl font-bold">生财有术</h1>
+    <>
+      <LoginModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        role={selectedRole}
+      />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-teal-50 text-teal-900">
+        <header className="absolute top-0 left-0 w-full p-8">
+          <h1 className="text-2xl font-bold">生财有术</h1>
       </header>
       
-      <main className="text-center">
-        <div className="mb-4">
-          <span className="inline-block bg-yellow-200 text-yellow-800 text-sm font-semibold px-3 py-1 rounded-full">
+        <main className="flex flex-col items-center text-center">
+          <span className="mb-4 inline-block rounded-full bg-amber-200 px-4 py-1 text-sm font-semibold text-amber-800">
             内部专用
           </span>
-        </div>
-        <h2 className="text-5xl font-extrabold mb-3">
-          深海圈・YouTube Shorts 训练营
+          <h2 className="text-5xl font-extrabold">
+            深海圈 · YouTube Shorts 训练营
         </h2>
-        <p className="text-lg text-gray-600 mb-10">
-          两步预约・30秒搞定和教练的1v1
+          <p className="mt-4 text-lg text-gray-500">
+            两步预约 · 30秒搞定和教练的1v1
         </p>
-        <div className="flex justify-center gap-4">
-          <Link 
-            href="/booking"
-            className="bg-[#10B981] text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-emerald-600 transition-colors"
+          <div className="mt-10 flex space-x-4">
+            <button
+              onClick={() => handleRoleSelect('student')}
+              className="rounded-lg bg-emerald-500 px-8 py-3 text-lg font-semibold text-white shadow-md transition hover:bg-emerald-600"
           >
-            我是学员, 立即预约
-          </Link>
-          <Link 
-            href="/coach/availability"
-            className="bg-yellow-400 text-gray-900 font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-yellow-500 transition-colors"
+              我是学员，立即预约
+            </button>
+            <button
+              onClick={() => handleRoleSelect('coach')}
+              className="rounded-lg bg-amber-400 px-8 py-3 text-lg font-semibold text-gray-900 shadow-md transition hover:bg-amber-500"
           >
             我是教练
-          </Link>
-          <Link
-            href="/admin"
-            className="bg-white text-gray-800 font-semibold py-3 px-8 rounded-lg border border-gray-300 shadow-md hover:bg-gray-100 transition-colors"
-          >
-            我是管理员
-          </Link>
-        </div>
-      </main>
+            </button>
+            <button
+              onClick={() => handleRoleSelect('admin')}
+              className="rounded-lg border border-gray-200 bg-white px-8 py-3 text-lg font-semibold text-gray-700 shadow-md transition hover:bg-gray-100"
+            >
+              我是管理员
+            </button>
+          </div>
+        </main>
 
-      <footer className="absolute bottom-8 left-8">
-        <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white font-bold text-xl">
-          N
-        </div>
+        <footer className="absolute bottom-0 left-0 p-8">
+          <Link
+            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg
+              aria-label="Vercel logomark"
+              role="img"
+              viewBox="0 0 74 64"
+              className="h-8 w-auto text-black"
+            >
+              <path
+                d="M37.5896 0.25L74.5396 64.25H0.639648L37.5896 0.25Z"
+                fill="currentColor"
+              ></path>
+            </svg>
+          </Link>
       </footer>
     </div>
-  );
+    </>
+  )
 } 

@@ -20,8 +20,17 @@ model User {
   emailVerified DateTime?
   image         String?
   role          String    @default("STUDENT") // SQLite doesn't support enums, using String instead
+  isActive      Boolean   @default(true)
   accounts      Account[]
   sessions      Session[]
+
+  // Relations for Student-Coach Assignments
+  // For students: specifies their assigned coach
+  coachId         String?   @map("assigned_coach_id")
+  assignedCoach   User?     @relation("CoachAssignments", fields: [coachId], references: [id], onDelete: SetNull)
+
+  // For coaches: lists their assigned students
+  assignedStudents User[]    @relation("CoachAssignments")
 
   // Relations
   coachAvailabilities Availability[] @relation("CoachAvailabilities")
@@ -95,6 +104,8 @@ model Booking {
 
   availabilityId String       @unique // each booking is for one unique availability slot
   availability   Availability @relation(fields: [availabilityId], references: [id])
+
+  coachNotes String? // Optional notes added by the coach for this booking
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
